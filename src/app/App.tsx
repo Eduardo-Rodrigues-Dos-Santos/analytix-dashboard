@@ -4,11 +4,11 @@ import { ConsumptionChart } from "./components/ConsumptionChart";
 import { SummaryMetrics } from "./components/SummaryMetrics";
 import { Loader2 } from "lucide-react";
 
-// Mock API Response
 interface LaundryItem {
   name: string;
   weight: number;
   totalVapor: number;
+  totalEnergy: number;
   totalNewWater: number;
   totalReuseWater: number;
   totalHotWater: number;
@@ -16,21 +16,26 @@ interface LaundryItem {
 
 interface ApiResponse {
   items: LaundryItem[];
+
   vaporPerKg: number;
+  energyPerKg: number;
   newWaterPerKg: number;
   reuseWaterPerKg: number;
   hotWaterPerKg: number;
+
   vapor: number;
+  energy: number;
   newWater: number;
   reuseWater: number;
   hotWater: number;
   totalWeight: number;
 }
 
+
 async function fetchLaundryLoads(start: string, end: string) {
   try { 
     const response = await fetch(
-      `http://10.1.0.25:8080/laundry-loads?start=${encodeURIComponent(
+      `http://192.168.1.14:8080/laundry-loads?start=${encodeURIComponent(
         start
       )}&end=${encodeURIComponent(end)}`
     );
@@ -105,13 +110,16 @@ const handleSearch = async () => {
         {!loading && data && (
           <div className="space-y-6">
             <ConsumptionChart data={data.items} />
-            <SummaryMetrics
-              data={{
+          <SummaryMetrics
+             data={{
                 vaporPerKg: data.vaporPerKg,
+                energyPerKg: data.energyPerKg,
                 newWaterPerKg: data.newWaterPerKg,
                 reuseWaterPerKg: data.reuseWaterPerKg,
                 hotWaterPerKg: data.hotWaterPerKg,
+
                 vapor: data.vapor,
+                energy: data.energy,
                 newWater: data.newWater,
                 reuseWater: data.reuseWater,
                 hotWater: data.hotWater,
