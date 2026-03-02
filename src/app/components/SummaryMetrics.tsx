@@ -36,14 +36,35 @@ interface MetricCardProps {
 }
 
 function MetricCard({ icon, label, value, unit, color }: MetricCardProps) {
+  const formattedValue = value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
   return (
     <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-start gap-3">
       <div className={`p-3 rounded-lg ${color}`}>{icon}</div>
-      <div className="flex-1">
-        <p className="text-sm text-gray-600 mb-1">{label}</p>
-        <p className="text-2xl text-gray-900">
-          {value.toFixed(2)}{" "}
-          <span className="text-lg text-gray-500">{unit}</span>
+
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-gray-600 mb-1">
+          {label}
+        </p>
+
+        <p className="
+          text-gray-900
+          leading-tight
+          flex
+          flex-wrap
+          items-baseline
+          gap-1
+          min-w-0
+        ">
+          <span className="break-all">
+            {formattedValue}
+          </span>
+          <span className="text-gray-500 whitespace-nowrap">
+            {unit}
+          </span>
         </p>
       </div>
     </div>

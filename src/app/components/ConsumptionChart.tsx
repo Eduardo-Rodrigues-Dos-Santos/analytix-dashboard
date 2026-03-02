@@ -2,6 +2,8 @@ import { Card } from "./ui/card";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -9,115 +11,199 @@ import {
   Legend,
   ResponsiveContainer
 } from "recharts";
+import { useState } from "react";
+import { BarChart2, LineChart as LineChartIcon } from "lucide-react";
 
-interface LaundryItem {
-  name: string;
-  weight: number;
-  totalVapor: number;
-  totalEnergy: number;
-  totalNewWater: number;
-  totalReuseWater: number;
-  totalHotWater: number;
+interface Props {
+  data: any[];
+  perKg: boolean;
+  setPerKg: (value: boolean) => void;
+  onBarClick: (index: number) => void;
 }
 
-interface ConsumptionChartProps {
-  data: LaundryItem[];
-}
+type ViewMode = "bar" | "line";
 
-const COLORS = {
-  weight: "#6B7280",
-  totalVapor: "#F97316",
-  totalEnergy: "#EAB308",
-  totalNewWater: "#3B82F6",
-  totalReuseWater: "#10B981",
-  totalHotWater: "#8B5CF6"
-};
+export function ConsumptionChart({
+  data,
+  perKg,
+  setPerKg,
+  onBarClick
+}: Props) {
 
-const LABELS = {
-  weight: "Peso (kg)",
-  totalVapor: "Vapor (kg)",
-  totalEnergy: "Energia (kW)",
-  totalNewWater: "Água Nova (L)",
-  totalReuseWater: "Água Reuso (L)",
-  totalHotWater: "Água Quente (L)"
-};
+  const [view, setView] = useState<ViewMode>("bar");
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white border border-gray-200 shadow-lg rounded-lg p-4">
-        <p className="font-semibold text-gray-800 mb-2">{label}</p>
+  const formatNumber = (value: number) =>
+    value?.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
 
-        {payload.map((entry: any, index: number) => {
-          let unit = "L";
+  const handleClick = (state: any) => {
+    if (!state || state.activeTooltipIndex == null) return;
+    onBarClick(state.activeTooltipIndex);
+  };
 
-          if (
-            entry.dataKey === "weight" ||
-            entry.dataKey === "totalVapor"
-          ) {
-            unit = "kg";
-          }
+  const chartContent = (
+    <>
+      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
 
-          if (entry.dataKey === "totalEnergy") {
-            unit = "kW";
-          }
+      <XAxis
+        dataKey="name"
+        angle={-35}
+        textAnchor="end"
+        height={120}
+        interval={0}
+        tick={{ fill: "#4B5563", fontSize: 12 }}
+      />
 
-          return (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
-              {LABELS[entry.dataKey as keyof typeof LABELS]}:{" "}
-              {entry.value.toFixed(2)} {unit}
-            </p>
-          );
-        })}
-      </div>
-    );
-  }
+      <YAxis
+        width={100}
+        tickFormatter={formatNumber}
+        tick={{ fill: "#4B5563", fontSize: 12 }}
+      />
 
-  return null;
-};
+      <Tooltip formatter={(value: number) => formatNumber(value)} />
+      <Legend />
 
-export function ConsumptionChart({ data }: ConsumptionChartProps) {
+      {!perKg ? (
+        view === "bar" ? (
+          <Bar
+            dataKey="weight"
+            name="Peso Total"
+            fill="#6B7280"
+            radius={[4, 4, 0, 0]}
+          />
+        ) : (
+          <Line
+            type="monotone"
+            dataKey="weight"
+            name="Peso Total"
+            stroke="#6B7280"
+            strokeWidth={2}
+            dot={{ r: 3 }}
+          />
+        )
+      ) : (
+        <>
+          {view === "bar" ? (
+            <>
+              <Bar dataKey="new-water" fill="#3B82F6" radius={[4,4,0,0]} />
+              <Bar dataKey="reuse-water" fill="#10B981" radius={[4,4,0,0]} />
+              <Bar dataKey="vapor" fill="#F97316" radius={[4,4,0,0]} />
+              <Bar dataKey="energy" fill="#EAB308" radius={[4,4,0,0]} />
+              <Bar dataKey="hot-water" fill="#8B5CF6" radius={[4,4,0,0]} />
+            </>
+          ) : (
+            <>
+              <Line
+                type="monotone"
+                dataKey="new-water"
+                name="Água Nova"
+                stroke="#3B82F6"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="reuse-water"
+                name="Água Reuso"
+                stroke="#10B981"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="vapor"
+                name="Vapor"
+                stroke="#F97316"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="energy"
+                name="Energia"
+                stroke="#EAB308"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="hot-water"
+                name="Água Quente"
+                stroke="#8B5CF6"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
+            </>
+          )}
+        </>
+      )}
+    </>
+  );
+
   return (
     <Card className="p-6 bg-white shadow-sm">
-      <h2 className="text-2xl mb-6 text-gray-800">
-        Consumo por Tipo de Roupa
-      </h2>
+      <div className="flex justify-between items-center mb-6">
 
-      <ResponsiveContainer width="100%" height={500}>
-        <BarChart
-          data={data}
-          margin={{ top: 20, right: 30, left: 20, bottom: 80 }} barSize={18}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        {/* ESQUERDA: toggle de gráfico com ícones */}
+        <div className="flex gap-2">
+          <button
+            className={`px-4 py-2 rounded-md flex items-center gap-2 ${
+              view === "bar" ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
+            onClick={() => setView("bar")}
+          >
+            <BarChart2 className="w-4 h-4" />
+          </button>
 
-          <XAxis
-            dataKey="name"
-            angle={-45}
-            textAnchor="end"
-            height={100}
-            interval={0}
-            tick={{ fill: "#4B5563", fontSize: 12 }}
-          />
+          <button
+            className={`px-4 py-2 rounded-md flex items-center gap-2 ${
+              view === "line" ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
+            onClick={() => setView("line")}
+          >
+            <LineChartIcon className="w-4 h-4" />
+          </button>
+        </div>
 
-          <YAxis tick={{ fill: "#4B5563", fontSize: 12 }} />
+        {/* TÍTULO */}
+        <h2 className="text-2xl text-gray-800">
+          Métricas
+        </h2>
 
-          <Tooltip content={<CustomTooltip />} />
+        {/* DIREITA: toggle peso / recursos */}
+        <div className="flex gap-2">
+          <button
+            className={`px-4 py-2 rounded-md ${
+              !perKg ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
+            onClick={() => setPerKg(false)}
+          >
+            Peso
+          </button>
 
-          <Legend
-            wrapperStyle={{ paddingTop: "20px" }}
-            iconType="rect"
-            formatter={(value) =>
-              LABELS[value as keyof typeof LABELS]
-            }
-          />
+          <button
+            className={`px-4 py-2 rounded-md ${
+              perKg ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
+            onClick={() => setPerKg(true)}
+          >
+            Recursos
+          </button>
+        </div>
+      </div>
 
-          <Bar dataKey="weight" fill={COLORS.weight} radius={[4, 4, 0, 0]} />
-          <Bar dataKey="totalVapor" fill={COLORS.totalVapor} radius={[4, 4, 0, 0]} />
-          <Bar dataKey="totalEnergy" fill={COLORS.totalEnergy} radius={[4, 4, 0, 0]} />
-          <Bar dataKey="totalNewWater" fill={COLORS.totalNewWater} radius={[4, 4, 0, 0]} />
-          <Bar dataKey="totalReuseWater" fill={COLORS.totalReuseWater} radius={[4, 4, 0, 0]} />
-          <Bar dataKey="totalHotWater" fill={COLORS.totalHotWater} radius={[4, 4, 0, 0]} />
-        </BarChart>
+      <ResponsiveContainer width="100%" height={520}>
+        {view === "bar" ? (
+          <BarChart data={data} onClick={handleClick}>
+            {chartContent}
+          </BarChart>
+        ) : (
+          <LineChart data={data} onClick={handleClick}>
+            {chartContent}
+          </LineChart>
+        )}
       </ResponsiveContainer>
     </Card>
   );
