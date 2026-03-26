@@ -1,0 +1,147 @@
+vamos fazer algumas mudanças, adicionar cabeçalho para todas as telas do sistema.
+
+Para a pagina de cadastro dos keepers vamos adicionar o cadastro de tags para um keeper.
+e a remoção de tags de um keeper.
+
+endpoint da api keepers/{keeperId}/add-tag "adiciona uma tag para um keeper" método http put.
+
+corpo da requisição: {
+                         "name": "string",
+                         "value": "string"
+                     }
+resposta: no-content
+
+
+endpoint da api keepers/{keeperId}/remove-tag "remove uma tag de um keeper" método http put.
+
+parametro da requisição tagName
+resposta: no-content
+
+Para a tela de cadastro de clientes a api fornece os seguintes endpoints:
+
+1- /clients "adiciona um novo client" método http post.
+
+    corpor da requisição: {
+                              "reference": 0,
+                              "name": "string",
+                              "alias": "string"
+                          } 
+
+    resposta: {   "id": 0
+                  "name": "string",
+                  "alias": "string"
+              }
+
+2- /clients "lista clients" método http get
+    
+    parametros da requisição: {
+                                  "page": 0,
+                                  "size": 1,
+                                  "sort": [
+                                    "string"
+                                  ]
+                               }
+    resposta: {
+                  "content": [
+                    {
+                      "id": 0,
+                      "alias": "string",
+                      "name": "string"
+                    }
+                  ],
+                  "pageNumber": 0,
+                  "totalPages": 0,
+                  "totalElements": 0
+              }
+
+3- /clients/{clientId} "deleta um cliente" método http delete.
+    
+    resposta: no-content.
+
+4- /clients/{clientId} "atualiza um cliente" método http put.
+    
+    corpo da requisição: {
+                              "reference": 0,
+                              "name": "string",
+                              "alias": "string"
+                         }
+    resposta: {
+                  "id": 0,
+                  "alias": "string",
+                  "name": "string"
+              }
+
+para a tela de cadastro de grupos a api fornece os seguintes endpoints:
+
+1- /groups/{groupId} "atualiza um grupo" método http put.
+    
+    corpo da requisição: {
+                            "name": "string"
+                         }
+
+    resposta: {
+                  "id": 0,
+                  "name": "string"
+              }
+
+2- /groups "deleta um grupo" método http delete.
+
+    resposta: no-content.
+    
+3- /groups "lista grupos" método http get.
+    
+    parametros da requisição: {
+                                  "page": 0,
+                                  "size": 1,
+                                  "sort": [
+                                    "string"
+                                  ]
+                               }
+    resposta: {
+                  "content": [
+                    {
+                      "id": 0,
+                      "name": "string"
+                    }
+                  ],
+                  "pageNumber": 0,
+                  "totalPages": 0,
+                  "totalElements": 0
+              }
+
+4- /groups "cria um novo grupo" método http post.
+   
+    corpo da requisição: {
+                              "name": "string"
+                         }
+
+    resposta: {
+                  "id": 0,
+                  "name": "string",
+                  "clients": [
+
+                  ]
+              }
+
+5- /groups/{groupId}/attach-clients "adiciona clientes a um grupo" método http put.
+   
+    corpo da requisição: {
+                              "ids": [
+                                0
+                              ]
+                          }
+
+    resposta: no-content.
+
+6- /groups/{groupId}/detach-clients "remove clientes de um grupo" método http put.
+   
+    corpo da requisição: {
+                              "ids": [
+                                0
+                              ]
+                         }
+
+    resposta: no-content. 
+
+    
+ 
