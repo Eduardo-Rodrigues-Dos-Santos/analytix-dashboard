@@ -376,6 +376,7 @@ paths:
           items:
             type: integer
             format: int64
+            exclusiveMinimum: 0
       - name: filter
         in: query
         required: true
@@ -384,6 +385,12 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupProductionMetrics"
   /metrics/clients:
     get:
       tags:
@@ -605,6 +612,26 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ResourceDailyMatrics"
+    GroupProductionMetrics:
+      type: object
+      properties:
+        groupId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        productions:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupProductionModel"
+    GroupProductionModel:
+      type: object
+      properties:
+        producedAt:
+          type: string
+          format: date
+        weight:
+          type: number
     ClientProductionMetrics:
       type: object
       properties:

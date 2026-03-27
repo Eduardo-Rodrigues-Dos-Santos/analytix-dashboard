@@ -112,6 +112,29 @@ function normalizeResourceKey(name: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function sortResourcesByReferenceOrder(
+  reference: ResourceModel[] | undefined,
+  items: ResourceModel[] | undefined,
+) {
+  const list = items ?? [];
+  if (!reference || reference.length === 0) return list;
+
+  const order = new Map<string, number>();
+  reference.forEach((r, idx) => {
+    order.set(normalizeResourceKey(r.name), idx);
+  });
+
+  return [...list].sort((a, b) => {
+    const ia = order.get(normalizeResourceKey(a.name));
+    const ib = order.get(normalizeResourceKey(b.name));
+
+    if (ia != null && ib != null) return ia - ib;
+    if (ia != null) return -1;
+    if (ib != null) return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 function hashString(input: string) {
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
@@ -286,6 +309,22 @@ export function GeneralMetrics() {
 
     return { day: selectedResourceDay, weight, resources, resourcesPerKg };
   }, [selectedResourceDay, resourceMetrics]);
+
+  const orderedSelectedDayPerKg = useMemo(() => {
+    if (!selectedDaySummary) return [];
+    return sortResourcesByReferenceOrder(
+      observed?.resourcesPerKg ?? [],
+      selectedDaySummary.resourcesPerKg ?? [],
+    );
+  }, [selectedDaySummary, observed?.resourcesPerKg]);
+
+  const orderedSelectedDayTotals = useMemo(() => {
+    if (!selectedDaySummary) return [];
+    return sortResourcesByReferenceOrder(
+      observed?.resources ?? [],
+      selectedDaySummary.resources ?? [],
+    );
+  }, [selectedDaySummary, observed?.resources]);
 
   const handleResourcesChartClick = (state: any) => {
     if (!state || state.activeTooltipIndex == null) return;
@@ -582,7 +621,7 @@ export function GeneralMetrics() {
                 <div className="mb-8">
                   <h3 className="text-lg mb-4 text-gray-700">Indicadores por Kg</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {(selectedDaySummary.resourcesPerKg ?? []).map((r) => {
+                    {orderedSelectedDayPerKg.map((r) => {
                       const v = resourceVisual(r.name);
                       return (
                         <MetricCard
@@ -607,7 +646,7 @@ export function GeneralMetrics() {
                       icon={<Weight className="w-6 h-6 text-gray-600" />}
                       color="bg-gray-100"
                     />
-                    {(selectedDaySummary.resources ?? []).map((r) => {
+                    {orderedSelectedDayTotals.map((r) => {
                       const v = resourceVisual(r.name);
                       return (
                         <MetricCard

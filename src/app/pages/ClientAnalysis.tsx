@@ -45,6 +45,12 @@ interface ClientMetricApiModel {
   productions: ClientProduction[];
 }
 
+interface GroupMetricApiModel {
+  groupId?: number;
+  name?: string;
+  productions?: ClientProduction[];
+}
+
 interface ClientSimpleModel {
   id: number;
   alias: string;
@@ -90,35 +96,59 @@ async function fetchAllClients(): Promise<ClientOption[]> {
   }));
 }
 
+interface GroupSimpleModel {
+  id: number;
+  name: string;
+}
+
+interface PageResponseGroupSimpleModel {
+  content: GroupSimpleModel[];
+  pageNumber: number;
+  totalPages: number;
+  totalElements: number;
+}
+
+interface GroupOption {
+  id: number;
+  name: string;
+}
+
+async function fetchGroupsPage(
+  page: number,
+  size: number,
+): Promise<PageResponseGroupSimpleModel> {
+  const params = buildPageParams(page, size);
+  return apiJson<PageResponseGroupSimpleModel>(
+    "/groups?" + params.toString(),
+  );
+}
+
+async function fetchAllGroups(): Promise<GroupOption[]> {
+  const size = 200;
+  const maxPages = 30;
+  const all: GroupSimpleModel[] = [];
+
+  for (let page = 0; page < maxPages; page++) {
+    const data = await fetchGroupsPage(page, size);
+    all.push(...(data.content ?? []));
+    if (page >= (data.totalPages ?? 0) - 1) break;
+  }
+
+  return all.map((g) => ({
+    id: g.id,
+    name: g.name,
+  }));
+}
+
 interface GroupAnalysisResponse {
   groupName: string;
-  clients: {
-    clientAlias: string;
-    clientProductions: ClientProduction[];
-  }[];
+  productions: ClientProduction[];
 }
 
 type ChartType = "bar" | "line";
 type ComparisonType = "week" | "month" | null;
 type AnalysisType = "compare-clients" | "compare-groups";
 
-const AVAILABLE_GROUPS = [
-  { id: 1, name: "Grupo São Paulo - Zona Sul" },
-  { id: 2, name: "Grupo São Paulo - Zona Norte" },
-  { id: 3, name: "Grupo São Paulo - Zona Leste" },
-  { id: 4, name: "Grupo São Paulo - Zona Oeste" },
-  { id: 5, name: "Grupo São Paulo - Centro" },
-  { id: 6, name: "Grupo Rio de Janeiro - Zona Sul" },
-  { id: 7, name: "Grupo Rio de Janeiro - Zona Norte" },
-  { id: 8, name: "Grupo Rio de Janeiro - Barra" },
-  { id: 9, name: "Grupo Belo Horizonte" },
-  { id: 10, name: "Grupo Curitiba" },
-  { id: 11, name: "Grupo Porto Alegre" },
-  { id: 12, name: "Grupo Brasília" },
-  { id: 13, name: "Grupo Salvador" },
-  { id: 14, name: "Grupo Fortaleza" },
-  { id: 15, name: "Grupo Recife" },
-];
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -202,63 +232,6 @@ function calculatePreviousPeriod(
   return {
     start: formatDateTimeLocal(newStart),
     end: formatDateTimeLocal(newEnd),
-  };
-}
-
-function generateMockGroupData(
-  groupId: number,
-  isPrevious: boolean = false,
-): GroupAnalysisResponse {
-  const group = AVAILABLE_GROUPS.find((g) => g.id === groupId);
-  const weightModifier = isPrevious ? 0.9 : 1;
-  const baseWeight = groupId * 20;
-
-  return {
-    groupName: group?.name || "Grupo",
-    clients: [
-      {
-        clientAlias: "Hospital A",
-        clientProductions: [
-          {
-            producedAt: "2026-03-01",
-            weight: (275.12 + baseWeight) * weightModifier,
-          },
-          {
-            producedAt: "2026-03-02",
-            weight: (215.32 + baseWeight) * weightModifier,
-          },
-          {
-            producedAt: "2026-03-03",
-            weight: (266.9 + baseWeight) * weightModifier,
-          },
-          {
-            producedAt: "2026-03-04",
-            weight: (351.08 + baseWeight) * weightModifier,
-          },
-        ],
-      },
-      {
-        clientAlias: "Hospital B",
-        clientProductions: [
-          {
-            producedAt: "2026-03-01",
-            weight: (189.45 + baseWeight) * weightModifier,
-          },
-          {
-            producedAt: "2026-03-02",
-            weight: (234.67 + baseWeight) * weightModifier,
-          },
-          {
-            producedAt: "2026-03-03",
-            weight: (198.23 + baseWeight) * weightModifier,
-          },
-          {
-            producedAt: "2026-03-04",
-            weight: (276.89 + baseWeight) * weightModifier,
-          },
-        ],
-      },
-    ],
   };
 }
 
@@ -478,7 +451,7 @@ export function ClientAnalysis() {
   const [startDate, setStartDate] = useState(defaults.startDate);
   const [endDate, setEndDate] = useState(defaults.endDate);
   const [selectedClients, setSelectedClients] = useState<number[]>([]);
-  const [selectedGroups, setSelectedGroups] = useState<number[]>([1, 2]);
+  const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [clientsData, setClientsData] = useState<ClientAnalysisResponse[]>([]);
   const [groupsData, setGroupsData] = useState<GroupAnalysisResponse[]>([]);
@@ -490,6 +463,11 @@ export function ClientAnalysis() {
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsError, setClientsError] = useState<string | null>(null);
   const [didInitialSearch, setDidInitialSearch] = useState(false);
+
+  const [availableGroups, setAvailableGroups] = useState<GroupOption[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [groupsError, setGroupsError] = useState<string | null>(null);
+  const [didInitialGroupsSearch, setDidInitialGroupsSearch] = useState(false);
 
   const normalizeDateTimeLocal = (value: string) =>
     value.length === 16 ? value + ":00" : value;
@@ -561,7 +539,7 @@ export function ClientAnalysis() {
           allIds.length > 0
         ) {
           setDidInitialSearch(true);
-          void runSearch(allIds);
+          void runSearch({ clientIds: allIds });
         }
       } catch (error) {
         console.error(error);
@@ -580,14 +558,47 @@ export function ClientAnalysis() {
       cancelled = true;
     };
   }, []);
+  useEffect(() => {
+    let cancelled = false;
 
-  const runSearch = async (clientIdsOverride?: number[]) => {
-    const clientIdsToUse = clientIdsOverride ?? selectedClients;
+    const load = async () => {
+      setGroupsLoading(true);
+      setGroupsError(null);
+      try {
+        const options = await fetchAllGroups();
+        if (cancelled) return;
+        setAvailableGroups(options);
+        const allIds = options.map((o) => o.id);
+        setSelectedGroups((prev) => (prev.length > 0 ? prev : allIds));
+      } catch (error) {
+        console.error(error);
+        if (!cancelled) {
+          setAvailableGroups([]);
+          setGroupsError("Erro ao carregar grupos");
+        }
+      } finally {
+        if (!cancelled) setGroupsLoading(false);
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+
+  type SearchOverrides = { clientIds?: number[]; groupIds?: number[] };
+
+  const runSearch = async (overrides?: SearchOverrides) => {
+    const clientIdsToUse = overrides?.clientIds ?? selectedClients;
+    const groupIdsToUse = overrides?.groupIds ?? selectedGroups;
 
     const hasSelection =
       analysisType === "compare-clients"
         ? clientIdsToUse.length > 0
-        : selectedGroups.length > 0;
+        : groupIdsToUse.length > 0;
 
     if (!hasSelection) {
       alert(
@@ -607,6 +618,8 @@ export function ClientAnalysis() {
         const params = new URLSearchParams();
         params.set("start", normalizeDateTimeLocal(startDate));
         params.set("end", normalizeDateTimeLocal(endDate));
+        params.set("filter.start", normalizeDateTimeLocal(startDate));
+        params.set("filter.end", normalizeDateTimeLocal(endDate));
         params.set("clientIds", clientIdsToUse.join(","));
 
         const raw = await apiJson<unknown>(
@@ -624,10 +637,27 @@ export function ClientAnalysis() {
         setClientsData(mapped);
         setGroupsData([]);
       } else {
-        // Mantem comportamento atual (mock) para grupos
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        const data = selectedGroups.map((id) => generateMockGroupData(id));
-        setGroupsData(data);
+        const params = new URLSearchParams();
+        params.set("start", normalizeDateTimeLocal(startDate));
+        params.set("end", normalizeDateTimeLocal(endDate));
+        params.set("filter.start", normalizeDateTimeLocal(startDate));
+        params.set("filter.end", normalizeDateTimeLocal(endDate));
+        params.set("groupIds", groupIdsToUse.join(","));
+
+        const raw = await apiJson<unknown>(
+          "/metrics/groups?" + params.toString(),
+        );
+
+        const list: GroupMetricApiModel[] = Array.isArray(raw)
+          ? (raw as GroupMetricApiModel[])
+          : ((raw as any)?.groups ?? []);
+
+        const mapped: GroupAnalysisResponse[] = list.map((g) => ({
+          groupName: g.name ?? "Grupo",
+          productions: g.productions ?? [],
+        }));
+
+        setGroupsData(mapped);
         setClientsData([]);
       }
     } catch (error) {
@@ -641,6 +671,15 @@ export function ClientAnalysis() {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    if (analysisType !== "compare-groups") return;
+    if (didInitialGroupsSearch) return;
+    if (selectedGroups.length === 0) return;
+
+    setDidInitialGroupsSearch(true);
+    void runSearch({ groupIds: selectedGroups });
+  }, [analysisType, didInitialGroupsSearch, selectedGroups]);
+
 
   const handleSearch = () => {
     void runSearch();
@@ -659,6 +698,8 @@ export function ClientAnalysis() {
         const params = new URLSearchParams();
         params.set("start", normalizeDateTimeLocal(prev.start));
         params.set("end", normalizeDateTimeLocal(prev.end));
+        params.set("filter.start", normalizeDateTimeLocal(prev.start));
+        params.set("filter.end", normalizeDateTimeLocal(prev.end));
         params.set("clientIds", selectedClients.join(","));
 
         const raw = await apiJson<unknown>(
@@ -675,11 +716,27 @@ export function ClientAnalysis() {
 
         setPreviousClientsData(mapped);
       } else {
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        const data = selectedGroups.map((id) =>
-          generateMockGroupData(id, true),
+        const params = new URLSearchParams();
+        params.set("start", normalizeDateTimeLocal(prev.start));
+        params.set("end", normalizeDateTimeLocal(prev.end));
+        params.set("filter.start", normalizeDateTimeLocal(prev.start));
+        params.set("filter.end", normalizeDateTimeLocal(prev.end));
+        params.set("groupIds", selectedGroups.join(","));
+
+        const raw = await apiJson<unknown>(
+          "/metrics/groups?" + params.toString(),
         );
-        setPreviousGroupsData(data);
+
+        const list: GroupMetricApiModel[] = Array.isArray(raw)
+          ? (raw as GroupMetricApiModel[])
+          : ((raw as any)?.groups ?? []);
+
+        const mapped: GroupAnalysisResponse[] = list.map((g) => ({
+          groupName: g.name ?? "Grupo",
+          productions: g.productions ?? [],
+        }));
+
+        setPreviousGroupsData(mapped);
       }
     } catch (error) {
       console.error(error);
@@ -732,24 +789,16 @@ export function ClientAnalysis() {
     const dateMap = new Map<string, any>();
 
     data.forEach((group) => {
-      const groupTotals = new Map<string, number>();
+      (group.productions ?? []).forEach((prod) => {
+        const ymd = extractYmd(prod.producedAt);
+        if (!ymd) return;
 
-      group.clients.forEach((client) => {
-        client.clientProductions.forEach((prod) => {
-          const ymd = extractYmd(prod.producedAt);
-          if (!ymd) return;
-          const currentTotal = groupTotals.get(ymd) || 0;
-          groupTotals.set(ymd, currentTotal + prod.weight);
-        });
-      });
-
-      groupTotals.forEach((total, ymd) => {
         if (!dateMap.has(ymd)) {
           dateMap.set(ymd, { date: ymdToPtBr(ymd), _ymd: ymd });
         }
 
         const entry = dateMap.get(ymd);
-        entry[group.groupName] = total;
+        entry[group.groupName] = prod.weight;
       });
     });
 
@@ -940,10 +989,16 @@ export function ClientAnalysis() {
                 Selecione os Grupos
               </Label>
               <MultiSelect
-                options={AVAILABLE_GROUPS}
+                options={availableGroups}
                 selected={selectedGroups}
                 onChange={setSelectedGroups}
-                placeholder="Selecione um ou mais grupos..."
+                placeholder={
+                  groupsLoading
+                    ? "Carregando grupos..."
+                    : groupsError
+                      ? groupsError
+                      : "Selecione um ou mais grupos..."
+                }
               />
             </div>
           )}
