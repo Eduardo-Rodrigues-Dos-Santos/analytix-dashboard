@@ -273,7 +273,7 @@ export function GeneralMetrics() {
       }
       const point = byDay.get(day)!;
       const prev = Number(point[name] ?? 0);
-      point[name] = prev + (rm.value ?? 0);
+      point[name] = prev + (rm.valuePerKg ?? 0);
     }
     return Array.from(byDay.values()).sort((a, b) => String(a._day).localeCompare(String(b._day)));
   }, [resourceMetrics]);
@@ -339,10 +339,10 @@ export function GeneralMetrics() {
 
   const ChartComponent = chartType === "bar" ? RechartsBarChart : RechartsLineChart;
 
-  const formatNumber = (value: number) =>
+  const formatNumber = (value: number, precision: number = 2) =>
     Number(value ?? 0).toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: precision,
+      maximumFractionDigits: precision,
     });
 
 
@@ -496,7 +496,7 @@ export function GeneralMetrics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="date" tick={{ fill: "#4B5563", fontSize: 12 }} />
                 <YAxis tick={{ fill: "#4B5563", fontSize: 12 }} />
-                <Tooltip formatter={(value: number) => formatNumber(value)} />
+                <Tooltip formatter={(value: number) => formatNumber(value, 2)} />
                 <Legend />
 
                 {chartType === "bar" ? (
@@ -564,7 +564,7 @@ export function GeneralMetrics() {
             </Card>
           )}
           <Card className="p-6 bg-white shadow-sm">
-            <h2 className="text-2xl mb-6 text-gray-800">Recursos por Dia</h2>
+            <h2 className="text-2xl mb-6 text-gray-800">Recursos por Kg por Dia</h2>
 
             {resourcesChartData.length === 0 ? (
               <p className="text-gray-500">Nenhum consumo de recursos encontrado no periodo.</p>
@@ -574,7 +574,7 @@ export function GeneralMetrics() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="date" tick={{ fill: "#4B5563", fontSize: 12 }} />
                   <YAxis tick={{ fill: "#4B5563", fontSize: 12 }} />
-                  <Tooltip formatter={(value: number) => formatNumber(value)} />
+                  <Tooltip formatter={(value: number) => formatNumber(value, 4)} />
                   <Legend />
 
                   {chartType === "bar" ? (
