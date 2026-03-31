@@ -17,6 +17,7 @@ import {
 import { apiJson, apiRequest, buildPageParams } from "../lib/api";
 
 interface KeeperTag {
+  id: number;
   name: string;
   value: string;
 }
@@ -24,7 +25,8 @@ interface KeeperTag {
 interface Keeper {
   id: number;
   name: string;
-  tags?: KeeperTag[];
+  reference: string;
+  tags: KeeperTag[];
 }
 
 interface KeeperListItem {
@@ -46,8 +48,9 @@ interface KeeperFormData {
 
 interface KeeperModel {
   id: number;
+  reference: string;
   name: string;
-  tags?: string[];
+  tags?: KeeperTag[];
 }
 
 interface PageResponseKeeperSimpleModel {
@@ -57,30 +60,12 @@ interface PageResponseKeeperSimpleModel {
   totalElements: number;
 }
 
-function parseTag(raw: string): KeeperTag {
-  const trimmed = String(raw ?? "").trim();
-  if (!trimmed) return { name: "", value: "" };
-
-  const parts = trimmed.includes(":")
-    ? trimmed.split(":")
-    : trimmed.includes("=")
-      ? trimmed.split("=")
-      : [trimmed];
-
-  const name = (parts[0] ?? "").trim();
-  const value = parts.slice(1).join(":").trim();
-
-  return { name, value };
-}
-
 function mapKeeperModel(model: KeeperModel): Keeper {
   return {
     id: model.id,
     name: model.name,
     reference: model.reference,
-    tags: (model.tags ?? [])
-      .map(parseTag)
-      .filter((t) => Boolean(t.name)),
+    tags: (model.tags ?? []).filter((t) => Boolean(t && t.name)),
   };
 }
 
@@ -126,9 +111,9 @@ async function addTag(keeperId: number, name: string, value: string): Promise<vo
   });
 }
 
-async function removeTag(keeperId: number, tagName: string): Promise<void> {
+async function removeTag(keeperId: number, tagId: number): Promise<void> {
   const params = new URLSearchParams();
-  params.set("tagName", tagName);
+  params.set("tagId", String(tagId));
   await apiRequest(`/keepers/${keeperId}/remove-tag?${params.toString()}`, {
     method: "PUT",
   });
@@ -324,12 +309,12 @@ export function Keepers() {
     }
   };
 
-  const handleRemoveTag = async (name: string) => {
+  const handleRemoveTag = async (tagId: number) => {
     if (!managingTagsKeeper) return;
 
     setLoading(true);
     try {
-      await removeTag(managingTagsKeeper.id, name);
+      await removeTag(managingTagsKeeper.id, tagId);
       const updatedKeeper = await fetchKeeperById(managingTagsKeeper.id);
       setManagingTagsKeeper(updatedKeeper);
     } catch (error) {
@@ -524,14 +509,27 @@ export function Keepers() {
           {editingKeeper && editingKeeper.tags && editingKeeper.tags.length > 0 && (
             <div>
               <Label className="text-sm text-gray-600 mb-2 block">Tags</Label>
-              <div className="flex flex-wrap gap-2">
-                {editingKeeper.tags.map((tag, index) => (
-                  <span key={index} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                    {tag.name}
-                    {tag.value ? `: ${tag.value}` : ""}
-                  </span>
-                ))}
+              <div className="overflow-x-auto border border-gray-200 rounded-md">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th className="text-left font-medium px-3 py-2">ID</th>
+                      <th className="text-left font-medium px-3 py-2">Nome</th>
+                      <th className="text-left font-medium px-3 py-2">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {editingKeeper.tags.map((tag) => (
+                      <tr key={tag.id} className="border-t border-gray-200">
+                        <td className="px-3 py-2 text-gray-700">{tag.id}</td>
+                        <td className="px-3 py-2 text-gray-900 font-medium">{tag.name}</td>
+                        <td className="px-3 py-2 text-blue-700">{tag.value || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+              <p className="text-xs text-gray-500 mt-2">Para adicionar ou remover tags, use o botao \"Tags\" na lista.</p>
             </div>
           )}
 
@@ -676,19 +674,22 @@ export function Keepers() {
             <div>
               <h3 className="text-lg text-gray-900 mb-4">Tags Atuais</h3>
               <div className="grid grid-cols-1 gap-3">
-                {managingTagsKeeper.tags.map((tag, index) => (
+                {managingTagsKeeper.tags.map((tag) => (
                   <div
-                    key={index}
+                    key={tag.id}
                     className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                   >
                     <div className="flex-1">
-                      <span className="text-gray-700 font-medium">{tag.name}:</span>{" "}
-                      <span className="text-blue-700">{tag.value}</span>
+                      <div className="text-xs text-gray-500">ID: {tag.id}</div>
+                      <div>
+                        <span className="text-gray-700 font-medium">{tag.name}:</span>{" "}
+                        <span className="text-blue-700">{tag.value}</span>
+                      </div>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleRemoveTag(tag.name)}
+                      onClick={() => handleRemoveTag(tag.id)}
                       className="border-red-300 text-red-600 hover:bg-red-50"
                       disabled={loading}
                     >

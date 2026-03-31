@@ -75,12 +75,13 @@ paths:
         schema:
           type: integer
           format: int64
-      - name: tagName
+      - name: tagId
         in: query
         required: true
         schema:
-          type: string
-          minLength: 1
+          type: integer
+          format: int64
+          exclusiveMinimum: 0
       responses:
         "200":
           description: OK
@@ -467,7 +468,17 @@ components:
         tags:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/TagModel"
+    TagModel:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        value:
+          type: string
     TagInputModel:
       type: object
       properties:
