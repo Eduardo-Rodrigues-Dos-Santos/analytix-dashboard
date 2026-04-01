@@ -87,7 +87,7 @@ export function DraggableModal({
         onMouseDown={handleMouseDown}
       >
         <div className="modal-header flex items-center justify-between p-6 border-b border-gray-200 cursor-grab active:cursor-grabbing">
-          <h2 className="text-2xl text-gray-900 select-none">{title}</h2>
+          <h2 className="text-1xl text-gray-900 select-none">{title}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"

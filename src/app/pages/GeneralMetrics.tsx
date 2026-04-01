@@ -501,7 +501,7 @@ export function GeneralMetrics() {
       {!loading && data && (
         <div className="space-y-6">
           <Card className="p-6 bg-white shadow-sm">
-            <h2 className="text-2xl mb-6 text-gray-800">Peso Total por Dia</h2>
+            <h2 className="text-1xl mb-6 text-gray-800">Peso Total por Dia</h2>
 
             <ResponsiveContainer width="100%" height={400}>
               <ChartComponent data={weightChartData}>
@@ -529,7 +529,7 @@ export function GeneralMetrics() {
 
           {observed && (
             <Card className="p-6 bg-white shadow-sm">
-              <h2 className="text-2xl mb-6 text-gray-800">Resumo do Periodo</h2>
+              <h2 className="text-1xl mb-6 text-gray-800">Resumo do Periodo</h2>
 
               <div className="mb-8">
                 <h3 className="text-lg mb-4 text-gray-700">Indicadores por Kg</h3>
@@ -576,7 +576,7 @@ export function GeneralMetrics() {
             </Card>
           )}
           <Card className="p-6 bg-white shadow-sm">
-            <h2 className="text-2xl mb-6 text-gray-800">Recursos por Kg por Dia</h2>
+            <h2 className="text-1xl mb-6 text-gray-800">Recursos por Kg</h2>
             <div className="mb-4 flex flex-wrap gap-2">
               {resourceKeys.map((k) => {
                 const active = visibleResourceKeys.includes(k);
@@ -656,7 +656,7 @@ export function GeneralMetrics() {
           </Card>
 
           <Card className="p-6 bg-white shadow-sm">
-            <h2 className="text-2xl mb-6 text-gray-800">Indicadores por Kg do Dia Selecionado</h2>
+            <h2 className="text-1xl mb-6 text-gray-800">Indicadores por Kg do Dia Selecionado</h2>
 
             {!selectedDaySummary ? (
               <p className="text-gray-500">Nenhum dia selecionado.</p>

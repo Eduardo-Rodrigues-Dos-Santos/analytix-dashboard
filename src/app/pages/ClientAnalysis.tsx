@@ -1191,7 +1191,7 @@ export function ClientAnalysis() {
       {!loading && currentChartData.length > 0 && (
         <div className="space-y-6">
           <Card className="p-6 bg-white shadow-sm">
-            <h2 className="text-2xl mb-6 text-gray-800">
+            <h2 className="text-1xl mb-6 text-gray-800">
               {analysisType === "compare-clients"
                 ? "Comparação de Clientes"
                 : "Comparação de Grupos"}
@@ -1244,7 +1244,7 @@ export function ClientAnalysis() {
 
           {previousChartData.length > 0 && comparison && (
             <Card className="p-6 bg-white shadow-sm">
-              <h2 className="text-2xl mb-6 text-gray-800">
+              <h2 className="text-1xl mb-6 text-gray-800">
                 Resumo do Período Anterior
                 <span className="text-base text-gray-500 ml-2">
                   ({comparison === "week" ? "Semana Passada" : "Mês Passado"})
