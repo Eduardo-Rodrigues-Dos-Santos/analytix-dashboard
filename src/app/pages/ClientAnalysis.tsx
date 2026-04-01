@@ -759,6 +759,55 @@ export function ClientAnalysis() {
     return ymd.slice(8, 10) + "/" + ymd.slice(5, 7) + "/" + ymd.slice(0, 4);
   };
 
+
+  const previousKeyForEntity = (entity: string) => `${entity} (Anterior)`;
+
+  const buildOverlayChartData = (
+    current: any[],
+    previous: any[],
+    entities: string[],
+  ) => {
+    const currDays = current.map((r) => String(r._ymd ?? "")).filter(Boolean);
+    const prevDays = previous.map((r) => String(r._ymd ?? "")).filter(Boolean);
+
+    const currByYmd = new Map<string, any>();
+    current.forEach((r) => {
+      const key = String(r._ymd ?? "");
+      if (key) currByYmd.set(key, r);
+    });
+
+    const prevByYmd = new Map<string, any>();
+    previous.forEach((r) => {
+      const key = String(r._ymd ?? "");
+      if (key) prevByYmd.set(key, r);
+    });
+
+    const len = Math.max(currDays.length, prevDays.length);
+    const rows: any[] = [];
+
+    for (let i = 0; i < len; i++) {
+      const currYmd = currDays[i];
+      const prevYmd = prevDays[i];
+      const currRow = currYmd ? currByYmd.get(currYmd) : null;
+      const prevRow = prevYmd ? prevByYmd.get(prevYmd) : null;
+
+      const row: any = {
+        date: `D${i + 1}`,
+        currentDate: currYmd ? ymdToPtBr(currYmd) : "-",
+        previousDate: prevYmd ? ymdToPtBr(prevYmd) : "-",
+      };
+
+      entities.forEach((entity) => {
+        row[entity] = Number(currRow?.[entity] ?? 0);
+        row[previousKeyForEntity(entity)] = Number(prevRow?.[entity] ?? 0);
+      });
+
+      rows.push(row);
+    }
+
+    return rows;
+  };
+
   const prepareClientsChartData = (data: ClientAnalysisResponse[]) => {
     if (!data || data.length === 0) return [];
 
@@ -817,6 +866,18 @@ export function ClientAnalysis() {
       ? prepareClientsChartData(previousClientsData)
       : prepareGroupsChartData(previousGroupsData);
 
+
+  const entities = useMemo(() => {
+    return analysisType === "compare-clients"
+      ? clientsData.map((c) => c.clientAlias)
+      : groupsData.map((g) => g.groupName);
+  }, [analysisType, clientsData, groupsData]);
+
+  const overlayChartData = useMemo(() => {
+    if (!comparison || previousChartData.length === 0) return currentChartData;
+    return buildOverlayChartData(currentChartData, previousChartData, entities);
+  }, [comparison, currentChartData, previousChartData, entities]);
+
   const colors = [
     "#3B82F6",
     "#10B981",
@@ -828,7 +889,7 @@ export function ClientAnalysis() {
     "#84CC16",
   ];
 
-  const renderChart = (data: any[], entities: string[], title: string) => {
+  const renderChart = (data: any[], entities: string[], showPrevious: boolean) => {
     const ChartComponent =
       chartType === "bar" ? RechartsBarChart : RechartsLineChart;
 
@@ -842,6 +903,13 @@ export function ClientAnalysis() {
             label={{ value: "Peso (kg)", angle: -90, position: "insideLeft" }}
           />
           <Tooltip
+            labelFormatter={(label: any, payload: any) => {
+              const p = payload?.[0]?.payload as any;
+              if (p && (p.currentDate || p.previousDate)) {
+                return `${label}  Atual: ${p.currentDate ?? "-"}  Anterior: ${p.previousDate ?? "-"}`;
+              }
+              return String(label);
+            }}
             contentStyle={{
               backgroundColor: "#fff",
               border: "1px solid #e5e7eb",
@@ -850,37 +918,68 @@ export function ClientAnalysis() {
           />
           <Legend />
 
-          {chartType === "bar"
-            ? entities.map((entity, index) => (
-                <Bar
-                  key={entity}
-                  dataKey={entity}
-                  fill={colors[index % colors.length]}
-                  radius={[4, 4, 0, 0]}
-                />
-              ))
-            : entities.map((entity, index) => (
-                <Line
-                  key={entity}
-                  type="monotone"
-                  dataKey={entity}
-                  stroke={colors[index % colors.length]}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                />
-              ))}
+                    {chartType === "bar"
+            ? entities.flatMap((entity, index) => {
+                const color = colors[index % colors.length];
+                const current = (
+                  <Bar
+                    key={entity}
+                    dataKey={entity}
+                    name={entity}
+                    fill={color}
+                    radius={[4, 4, 0, 0]}
+                  />
+                );
+
+                if (!showPrevious) return [current];
+
+                return [
+                  current,
+                  <Bar
+                    key={previousKeyForEntity(entity)}
+                    dataKey={previousKeyForEntity(entity)}
+                    name={previousKeyForEntity(entity)}
+                    fill={color}
+                    fillOpacity={0.25}
+                    radius={[4, 4, 0, 0]}
+                  />,
+                ];
+              })
+            : entities.flatMap((entity, index) => {
+                const color = colors[index % colors.length];
+                const current = (
+                  <Line
+                    key={entity}
+                    type="monotone"
+                    dataKey={entity}
+                    name={entity}
+                    stroke={color}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
+                );
+
+                if (!showPrevious) return [current];
+
+                return [
+                  current,
+                  <Line
+                    key={previousKeyForEntity(entity)}
+                    type="monotone"
+                    dataKey={previousKeyForEntity(entity)}
+                    name={previousKeyForEntity(entity)}
+                    stroke={color}
+                    strokeWidth={2}
+                    strokeDasharray="6 4"
+                    dot={false}
+                  />,
+                ];
+              })}
         </ChartComponent>
       </ResponsiveContainer>
     );
   };
-
-  const getCurrentEntities = () => {
-    if (analysisType === "compare-clients") {
-      return clientsData.map((c) => c.clientAlias);
-    } else {
-      return groupsData.map((g) => g.groupName);
-    }
-  };
+  const getCurrentEntities = () => entities;
 
   const calculateTotals = (data: any[]) => {
     const entities = getCurrentEntities();
@@ -1098,15 +1197,17 @@ export function ClientAnalysis() {
                 : "Comparação de Grupos"}
               {comparison && (
                 <span className="text-base text-gray-500 ml-2">
-                  (Período Atual)
+                  (Atual vs {comparison === "week" ? "Semana Passada" : "Mês Passado"})
                 </span>
               )}
             </h2>
 
             {renderChart(
-              currentChartData,
+              comparison && previousChartData.length > 0
+                ? overlayChartData
+                : currentChartData,
               getCurrentEntities(),
-              "Período Atual",
+              Boolean(comparison && previousChartData.length > 0),
             )}
 
             <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -1144,19 +1245,11 @@ export function ClientAnalysis() {
           {previousChartData.length > 0 && comparison && (
             <Card className="p-6 bg-white shadow-sm">
               <h2 className="text-2xl mb-6 text-gray-800">
-                {analysisType === "compare-clients"
-                  ? "Comparação de Clientes"
-                  : "Comparação de Grupos"}
+                Resumo do Período Anterior
                 <span className="text-base text-gray-500 ml-2">
                   ({comparison === "week" ? "Semana Passada" : "Mês Passado"})
                 </span>
               </h2>
-
-              {renderChart(
-                previousChartData,
-                getCurrentEntities(),
-                "Período Anterior",
-              )}
 
               <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {getCurrentEntities().map((entity, index) => {

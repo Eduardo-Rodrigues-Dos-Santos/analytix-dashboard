@@ -251,6 +251,8 @@ export function GeneralMetrics() {
   const [data, setData] = useState<LaundryMetricsResponse | null>(null);
   const [resourceData, setResourceData] = useState<ResourceMetricsResponse | null>(null);
   const [selectedResourceDayIndex, setSelectedResourceDayIndex] = useState<number | null>(null);
+  const [visibleResourceKeys, setVisibleResourceKeys] = useState<string[]>([]);
+  const [resourceSelectionTouched, setResourceSelectionTouched] = useState(false);
 
   const productions = data?.productions ?? [];
   const observed = data;
@@ -261,6 +263,16 @@ export function GeneralMetrics() {
     const keys = resourceMetrics.map((r) => r.resourceName).filter(Boolean);
     return Array.from(new Set(keys)).sort((a, b) => a.localeCompare(b));
   }, [resourceMetrics]);
+
+  useEffect(() => {
+    setVisibleResourceKeys((prev) => {
+      if (!resourceSelectionTouched) return resourceKeys;
+      const prevSet = new Set(prev);
+      return resourceKeys.filter((k) => prevSet.has(k));
+    });
+  }, [resourceKeys, resourceSelectionTouched]);
+
+
 
   const resourcesChartData = useMemo(() => {
     const byDay = new Map<string, Record<string, number | string>>();
@@ -565,9 +577,45 @@ export function GeneralMetrics() {
           )}
           <Card className="p-6 bg-white shadow-sm">
             <h2 className="text-2xl mb-6 text-gray-800">Recursos por Kg por Dia</h2>
+            <div className="mb-4 flex flex-wrap gap-2">
+              {resourceKeys.map((k) => {
+                const active = visibleResourceKeys.includes(k);
+                const v = resourceVisual(k);
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      setResourceSelectionTouched(true);
+                      setVisibleResourceKeys((prev) =>
+                        prev.includes(k)
+                          ? prev.filter((x) => x !== k)
+                          : [...prev, k],
+                      );
+                    }}
+                    className={
+                      "inline-flex items-center gap-2 px-3 py-1 rounded-full border text-sm transition-colors " +
+                      (active
+                        ? "bg-white text-gray-900 border-gray-300"
+                        : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100")
+                    }
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: v.chartColor }}
+                    />
+                    {displayResourceName(k)}
+                  </button>
+                );
+              })}
+            </div>
+
 
             {resourcesChartData.length === 0 ? (
               <p className="text-gray-500">Nenhum consumo de recursos encontrado no periodo.</p>
+            ) : visibleResourceKeys.length === 0 ? (
+              <p className="text-gray-500">Selecione ao menos um recurso para exibir no grafico.</p>
             ) : (
               <ResponsiveContainer width="100%" height={420}>
                 <ChartComponent data={resourcesChartData} onClick={handleResourcesChartClick}>
@@ -578,7 +626,7 @@ export function GeneralMetrics() {
                   <Legend />
 
                   {chartType === "bar" ? (
-                    resourceKeys.map((k) => (
+                    visibleResourceKeys.map((k) => (
                       <Bar
                         key={k}
                         dataKey={k}
@@ -588,7 +636,7 @@ export function GeneralMetrics() {
                       />
                     ))
                   ) : (
-                    resourceKeys.map((k) => (
+                    visibleResourceKeys.map((k) => (
                       <Line
                         key={k}
                         type="monotone"
@@ -604,7 +652,7 @@ export function GeneralMetrics() {
               </ResponsiveContainer>
             )}
 
-            <div className="mt-4 text-sm text-gray-500">Clique em uma barra/linha para selecionar um dia e ver os indicadores por kg abaixo.</div>
+            <div className="mt-4 text-sm text-gray-500">Clique nos recursos acima para ocultar/mostrar no grafico. Clique em uma barra/linha para selecionar um dia e ver os indicadores por kg abaixo.</div>
           </Card>
 
           <Card className="p-6 bg-white shadow-sm">
