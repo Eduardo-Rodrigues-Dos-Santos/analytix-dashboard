@@ -4,6 +4,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Keepers } from "./pages/Keepers";
 import { Clients } from "./pages/Clients";
 import { Groups } from "./pages/Groups";
+import { Goals } from "./pages/Goals";
 import { ClientAnalysis } from "./pages/ClientAnalysis";
 import { GeneralMetrics } from "./pages/GeneralMetrics";
 
@@ -27,6 +28,10 @@ export const router = createBrowserRouter([
       {
         path: "cadastros/grupos",
         Component: Groups,
+      },
+      {
+        path: "cadastros/metas",
+        Component: Goals,
       },
       {
         path: "analises/clientes",

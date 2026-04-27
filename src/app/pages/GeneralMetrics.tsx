@@ -30,17 +30,18 @@ import {
   YAxis,
 } from "recharts";
 import { apiJson } from "../lib/api";
+import { displayApiDecimal, formatFixedNumber, parseApiNumber } from "../lib/format";
 
 type ChartType = "bar" | "line";
 
 interface ResourceModel {
   name: string;
-  value: number;
+  value: number | string;
 }
 
 interface DailyProductionModel {
   producedAt: string;
-  weight: number;
+  weight: number | string;
 }
 
 interface LaundryMetricsResponse {
@@ -53,9 +54,9 @@ interface LaundryMetricsResponse {
 interface ResourceDailyMatricsModel {
   consumedAt: string;
   resourceName: string;
-  weight: number;
-  value: number;
-  valuePerKg: number;
+  weight: number | string;
+  value: number | string;
+  valuePerKg: number | string;
 }
 
 interface ResourceMetricsResponse {
@@ -217,18 +218,15 @@ function MetricCard({
   value,
   icon,
   color,
-  precision = 2,
+  precision = 4,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   icon: React.ReactNode;
   color: string;
   precision?: number;
 }) {
-  const formattedValue = Number(value ?? 0).toLocaleString("pt-BR", {
-    minimumFractionDigits: precision,
-    maximumFractionDigits: precision,
-  });
+  const formattedValue = displayApiDecimal(value, precision);
 
   return (
     <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-start gap-3">
@@ -284,8 +282,8 @@ export function GeneralMetrics() {
         byDay.set(day, { date: day, _day: day });
       }
       const point = byDay.get(day)!;
-      const prev = Number(point[name] ?? 0);
-      point[name] = prev + (rm.valuePerKg ?? 0);
+      const prev = parseApiNumber(point[name]);
+      point[name] = prev + parseApiNumber(rm.valuePerKg);
     }
     return Array.from(byDay.values()).sort((a, b) => String(a._day).localeCompare(String(b._day)));
   }, [resourceMetrics]);
@@ -305,12 +303,12 @@ export function GeneralMetrics() {
     const byName: Record<string, { value: number; valuePerKg: number }> = {};
     let weight = 0;
     for (const r of rows) {
-      weight = Math.max(weight, Number(r.weight ?? 0));
+      weight = Math.max(weight, parseApiNumber(r.weight));
       const key = r.resourceName;
       if (!key) continue;
       if (!byName[key]) byName[key] = { value: 0, valuePerKg: 0 };
-      byName[key].value += Number(r.value ?? 0);
-      byName[key].valuePerKg += Number(r.valuePerKg ?? 0);
+      byName[key].value += parseApiNumber(r.value);
+      byName[key].valuePerKg += parseApiNumber(r.valuePerKg);
     }
 
     const resources = Object.entries(byName).map(([name, v]) => ({ name, value: v.value }));
@@ -346,16 +344,13 @@ export function GeneralMetrics() {
   const weightChartData = useMemo(() => {
     return [...productions]
       .sort((a, b) => String(a.producedAt).localeCompare(String(b.producedAt)))
-      .map((p) => ({ date: p.producedAt, weight: p.weight ?? 0 }));
+      .map((p) => ({ date: p.producedAt, weight: parseApiNumber(p.weight) }));
   }, [productions]);
 
   const ChartComponent = chartType === "bar" ? RechartsBarChart : RechartsLineChart;
 
-  const formatNumber = (value: number, precision: number = 2) =>
-    Number(value ?? 0).toLocaleString("pt-BR", {
-      minimumFractionDigits: precision,
-      maximumFractionDigits: precision,
-    });
+  const formatNumber = (value: number, precision: number = 4) =>
+    formatFixedNumber(value, precision);
 
 
 
@@ -508,7 +503,7 @@ export function GeneralMetrics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="date" tick={{ fill: "#4B5563", fontSize: 12 }} />
                 <YAxis tick={{ fill: "#4B5563", fontSize: 12 }} />
-                <Tooltip formatter={(value: number) => formatNumber(value, 2)} />
+                <Tooltip formatter={(value: number) => formatNumber(value, 4)} />
                 <Legend />
 
                 {chartType === "bar" ? (

@@ -1,6 +1,6 @@
 export const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  "http://localhost:8080";
+  "http://10.1.0.25:8080";
 
 export async function apiRequest(
   path: string,

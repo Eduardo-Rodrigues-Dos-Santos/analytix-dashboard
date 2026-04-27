@@ -13,6 +13,7 @@ import {
   Users,
   UsersRound,
   TrendingUp,
+  Target,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -55,6 +56,7 @@ export function Navigation({ isCollapsed, setIsCollapsed }: NavigationProps) {
         { path: "/cadastros/keepers", label: "Keepers", icon: Radio },
         { path: "/cadastros/clientes", label: "Clientes", icon: Users },
         { path: "/cadastros/grupos", label: "Grupos", icon: UsersRound },
+        { path: "/cadastros/metas", label: "Metas", icon: Target },
       ],
     },
     {

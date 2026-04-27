@@ -187,11 +187,50 @@ paths:
       responses:
         "200":
           description: OK
+  /goals/{goalId}:
+    put:
+      tags:
+      - goal-consumption-controller
+      operationId: update_2
+      parameters:
+      - name: goalId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInputModel"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GoalModel"
+    delete:
+      tags:
+      - goal-consumption-controller
+      operationId: delete_2
+      parameters:
+      - name: goalId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
   /clients/{clientId}:
     put:
       tags:
       - client-controller
-      operationId: update_2
+      operationId: update_3
       parameters:
       - name: clientId
         in: path
@@ -215,7 +254,7 @@ paths:
     delete:
       tags:
       - client-controller
-      operationId: delete_2
+      operationId: delete_3
       parameters:
       - name: clientId
         in: path
@@ -292,11 +331,42 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/GroupModel"
+  /goals:
+    get:
+      tags:
+      - goal-consumption-controller
+      operationId: findAll_2
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GoalModel"
+    post:
+      tags:
+      - goal-consumption-controller
+      operationId: add_2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInputModel"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GoalModel"
   /clients:
     get:
       tags:
       - client-controller
-      operationId: findAll_2
+      operationId: findAll_3
       parameters:
       - name: pageable
         in: query
@@ -313,7 +383,7 @@ paths:
     post:
       tags:
       - client-controller
-      operationId: add_2
+      operationId: add_3
       requestBody:
         content:
           application/json:
@@ -327,6 +397,20 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ClientSimpleModel"
+  /resources:
+    get:
+      tags:
+      - resource-controller
+      operationId: findAll_4
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TagModel"
   /metrics:
     get:
       tags:
@@ -442,6 +526,20 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ClientSimpleModel"
+  /goals/dashboard:
+    get:
+      tags:
+      - goal-consumption-controller
+      operationId: dashboard
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResourceGoalMetric"
 components:
   schemas:
     KeeperInputModel:
@@ -452,8 +550,10 @@ components:
           minLength: 1
         reference:
           type: string
+          minLength: 1
       required:
       - name
+      - reference
     KeeperModel:
       type: object
       properties:
@@ -517,6 +617,27 @@ components:
             format: int64
           maxItems: 30
           minItems: 1
+    GoalInputModel:
+      type: object
+      properties:
+        tagId:
+          type: integer
+          format: int64
+        value:
+          type: number
+      required:
+      - tagId
+      - value
+    GoalModel:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        value:
+          type: string
+        tag:
+          $ref: "#/components/schemas/TagModel"
     ClientInputModel:
       type: object
       properties:
@@ -577,7 +698,7 @@ components:
           type: string
           format: date
         weight:
-          type: number
+          type: string
     LaundryMetrics:
       type: object
       properties:
@@ -586,7 +707,7 @@ components:
           items:
             $ref: "#/components/schemas/DailyProductionModel"
         totalWeight:
-          type: number
+          type: string
         resources:
           type: array
           items:
@@ -601,7 +722,7 @@ components:
         name:
           type: string
         value:
-          type: number
+          type: string
     ResourceDailyMatrics:
       type: object
       properties:
@@ -611,11 +732,11 @@ components:
         resourceName:
           type: string
         weight:
-          type: number
+          type: string
         value:
-          type: number
+          type: string
         valuePerKg:
-          type: number
+          type: string
     ResourceMetrics:
       type: object
       properties:
@@ -642,7 +763,7 @@ components:
           type: string
           format: date
         weight:
-          type: number
+          type: string
     ClientProductionMetrics:
       type: object
       properties:
@@ -665,7 +786,7 @@ components:
           type: string
           format: date
         weight:
-          type: number
+          type: string
     Pageable:
       type: object
       properties:
@@ -724,6 +845,17 @@ components:
         totalElements:
           type: integer
           format: int64
+    ResourceGoalMetric:
+      type: object
+      properties:
+        name:
+          type: string
+        perKgOfWeek:
+          type: string
+        perKgOfMonth:
+          type: string
+        perKgOfYear:
+          type: string
     PageResponseClientSimpleModel:
       type: object
       properties:

@@ -28,6 +28,7 @@ import {
   LineChart as RechartsLineChart,
 } from "recharts";
 import { apiJson, buildPageParams } from "../lib/api";
+import { formatFixedNumber } from "../lib/format";
 
 interface ClientProduction {
   producedAt: string;
@@ -1231,10 +1232,10 @@ export function ClientAnalysis() {
                       {entity}
                     </p>
                     <p className="text-xl text-gray-900 mb-1">
-                      {total.toFixed(2)} kg
+                      {formatFixedNumber(total, 2)} kg
                     </p>
                     <p className="text-xs text-gray-500">
-                      Média: {avg.toFixed(2)} kg/dia
+                      Média: {formatFixedNumber(avg, 2)} kg/dia
                     </p>
                   </div>
                 );
@@ -1272,10 +1273,10 @@ export function ClientAnalysis() {
                         {entity}
                       </p>
                       <p className="text-xl text-gray-900 mb-1">
-                        {total.toFixed(2)} kg
+                        {formatFixedNumber(total, 2)} kg
                       </p>
                       <p className="text-xs text-gray-500">
-                        Média: {avg.toFixed(2)} kg/dia
+                        Média: {formatFixedNumber(avg, 2)} kg/dia
                       </p>
                     </div>
                   );
@@ -1290,14 +1291,11 @@ export function ClientAnalysis() {
                   {getCurrentEntities().map((entity) => {
                     const currentTotals = calculateTotals(currentChartData);
                     const previousTotals = calculateTotals(previousChartData);
-                    const variation = previousTotals[entity]
-                      ? (
-                          ((currentTotals[entity] - previousTotals[entity]) /
-                            previousTotals[entity]) *
-                          100
-                        ).toFixed(1)
-                      : "0.0";
-                    const isPositive = parseFloat(variation) >= 0;
+                    const variationValue = previousTotals[entity]
+                      ? ((currentTotals[entity] - previousTotals[entity]) / previousTotals[entity]) * 100
+                      : 0;
+                    const variation = formatFixedNumber(variationValue, 1);
+                    const isPositive = variationValue >= 0;
 
                     return (
                       <div key={entity} className="text-center">
